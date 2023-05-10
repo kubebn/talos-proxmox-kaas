@@ -1,0 +1,78 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: theila
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: theila
+  namespace: theila
+  labels:
+    app: theila
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: theila
+  template:
+    metadata:
+      name: theila
+      labels:
+        app: theila
+    spec:
+      containers:
+      - name: theila
+        image: ghcr.io/siderolabs/theila:v0.2.1
+        args:
+          - "--port=8080"
+          - "--address=0.0.0.0"
+        env:
+          - name: KUBECONFIG
+            value: /etc/theila/kubeconfig
+          - name: TALOSCONFIG
+            value: /etc/theila/talosconfig
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - mountPath: /etc/theila/
+          name: config
+      volumes:
+        - name: config
+          configMap:
+            name: theila-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: theila-config
+  namespace: theila
+data:
+  talosconfig: |
+    context: mgmt-cluster
+    contexts:
+        mgmt-cluster:
+  kubeconfig: |
+    apiVersion: v1
+    kind: Config
+    clusters:
+    - name: mgmt-cluster
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+  labels:
+    app: theila
+  name: theila
+  namespace: theila
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: theila
+  type: LoadBalancer

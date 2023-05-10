@@ -1,0 +1,39 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: sidero-udp
+  namespace: sidero-system
+  annotations:
+    metallb.universe.tf/allow-shared-ip: "sidero"
+spec:
+  type: LoadBalancer
+  loadBalancerIP: ${SIDERO_ENDPOINT}
+  selector:
+    app: sidero
+  ports:
+    - name: tftp
+      targetPort: tftp
+      protocol: UDP
+      port: 69
+    - name: siderolink
+      targetPort: siderolink
+      protocol: UDP
+      port: 51821
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sidero-tcp
+  namespace: sidero-system
+  annotations:
+    metallb.universe.tf/allow-shared-ip: "sidero"
+spec:
+  type: LoadBalancer
+  loadBalancerIP: ${SIDERO_ENDPOINT}
+  selector:
+    app: sidero
+  ports:
+  - port: 8081
+    name: http
+    protocol: TCP
+    targetPort: http

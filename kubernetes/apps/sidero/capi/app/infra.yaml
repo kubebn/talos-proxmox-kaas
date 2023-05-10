@@ -1,0 +1,2925 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+    pod-security.kubernetes.io/enforce: privileged
+  name: sidero-system
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+    clusterctl.cluster.x-k8s.io/move: ""
+  name: environments.metal.sidero.dev
+spec:
+  group: metal.sidero.dev
+  names:
+    kind: Environment
+    listKind: EnvironmentList
+    plural: environments
+    singular: environment
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - description: the kernel for the environment
+      jsonPath: .spec.kernel.url
+      name: Kernel
+      type: string
+    - description: the initrd for the environment
+      jsonPath: .spec.initrd.url
+      name: Initrd
+      type: string
+    - description: indicates the readiness of the environment
+      jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - description: The age of this resource
+      jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Environment is the Schema for the environments API.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: EnvironmentSpec defines the desired state of Environment.
+            properties:
+              initrd:
+                properties:
+                  sha512:
+                    type: string
+                  url:
+                    type: string
+                type: object
+              kernel:
+                properties:
+                  args:
+                    items:
+                      type: string
+                    type: array
+                  sha512:
+                    type: string
+                  url:
+                    type: string
+                type: object
+            type: object
+          status:
+            description: EnvironmentStatus defines the observed state of Environment.
+            properties:
+              conditions:
+                items:
+                  properties:
+                    sha512:
+                      type: string
+                    status:
+                      type: string
+                    type:
+                      type: string
+                    url:
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions: null
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: sidero-system/caps-serving-cert
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: metalclusters.infrastructure.cluster.x-k8s.io
+spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        caBundle: Cg==
+        service:
+          name: caps-webhook-service
+          namespace: sidero-system
+          path: /convert
+      conversionReviewVersions:
+      - v1
+      - v1beta1
+  group: infrastructure.cluster.x-k8s.io
+  names:
+    categories:
+    - cluster-api
+    kind: MetalCluster
+    listKind: MetalClusterList
+    plural: metalclusters
+    singular: metalcluster
+  scope: Namespaced
+  versions:
+  - name: v1alpha2
+    schema:
+      openAPIV3Schema:
+        description: MetalCluster is the Schema for the metalclusters API.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: MetalClusterSpec defines the desired state of MetalCluster.
+            properties:
+              apiEndpoints:
+                items:
+                  properties:
+                    host:
+                      description: The hostname on which the API server is serving.
+                      type: string
+                    port:
+                      description: The port on which the API server is serving.
+                      type: integer
+                  required:
+                  - host
+                  - port
+                  type: object
+                type: array
+            type: object
+          status:
+            description: MetalClusterStatus defines the observed state of MetalCluster.
+            properties:
+              apiEndpoints:
+                description: APIEndpoints represents the endpoints to communicate
+                  with the control plane.
+                items:
+                  properties:
+                    host:
+                      description: The hostname on which the API server is serving.
+                      type: string
+                    port:
+                      description: The port on which the API server is serving.
+                      type: integer
+                  required:
+                  - host
+                  - port
+                  type: object
+                type: array
+              ready:
+                type: boolean
+            required:
+            - ready
+            type: object
+        type: object
+    served: true
+    storage: false
+    subresources:
+      status: {}
+  - additionalPrinterColumns:
+    - description: Cluster to which this MetalCluster belongs
+      jsonPath: .metadata.labels.cluster\.x-k8s\.io/cluster-name
+      name: Cluster
+      type: string
+    - jsonPath: .status.ready
+      name: Ready
+      type: boolean
+    - description: Control Plane Endpoint
+      jsonPath: .spec.controlPlaneEndpoint.host
+      name: Endpoint
+      priority: 1
+      type: string
+    - description: The age of this resource
+      jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha3
+    schema:
+      openAPIV3Schema:
+        description: MetalCluster is the Schema for the metalclusters API.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: MetalClusterSpec defines the desired state of MetalCluster.
+            properties:
+              controlPlaneEndpoint:
+                description: ControlPlaneEndpoint represents the endpoint used to
+                  communicate with the control plane.
+                properties:
+                  host:
+                    description: The hostname on which the API server is serving.
+                    type: string
+                  port:
+                    description: The port on which the API server is serving.
+                    format: int32
+                    type: integer
+                required:
+                - host
+                - port
+                type: object
+            type: object
+          status:
+            description: MetalClusterStatus defines the observed state of MetalCluster.
+            properties:
+              ready:
+                type: boolean
+            required:
+            - ready
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions: null
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: sidero-system/caps-serving-cert
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: metalmachines.infrastructure.cluster.x-k8s.io
+spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        caBundle: Cg==
+        service:
+          name: caps-webhook-service
+          namespace: sidero-system
+          path: /convert
+      conversionReviewVersions:
+      - v1
+      - v1beta1
+  group: infrastructure.cluster.x-k8s.io
+  names:
+    categories:
+    - cluster-api
+    kind: MetalMachine
+    listKind: MetalMachineList
+    plural: metalmachines
+    singular: metalmachine
+  scope: Namespaced
+  versions:
+  - name: v1alpha2
+    schema:
+      openAPIV3Schema:
+        description: MetalMachine is the Schema for the metalmachines API.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: MetalMachineSpec defines the desired state of MetalMachine.
+            properties:
+              providerID:
+                description: ProviderID is the unique identifier as specified by the
+                  cloud provider.
+                type: string
+              serverRef:
+                description: "ObjectReference contains enough information to let you
+                  inspect or modify the referred object. --- New uses of this type
+                  are discouraged because of difficulty describing its usage when
+                  embedded in APIs. 1. Ignored fields.  It includes many fields which
+                  are not generally honored.  For instance, ResourceVersion and FieldPath
+                  are both very rarely valid in actual usage. 2. Invalid usage help.
+                  \ It is impossible to add specific help for individual usage.  In
+                  most embedded usages, there are particular restrictions like, \"must
+                  refer only to types A and B\" or \"UID not honored\" or \"name must
+                  be restricted\". Those cannot be well described when embedded. 3.
+                  Inconsistent validation.  Because the usages are different, the
+                  validation rules are different by usage, which makes it hard for
+                  users to predict what will happen. 4. The fields are both imprecise
+                  and overly precise.  Kind is not a precise mapping to a URL. This
+                  can produce ambiguity during interpretation and require a REST mapping.
+                  \ In most cases, the dependency is on the group,resource tuple and
+                  the version of the actual struct is irrelevant. 5. We cannot easily
+                  change it.  Because this type is embedded in many locations, updates
+                  to this type will affect numerous schemas.  Don't make new APIs
+                  embed an underspecified API type they do not control. \n Instead
+                  of using this type, create a locally provided and used type that
+                  is well-focused on your reference. For example, ServiceReferences
+                  for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533
+                  ."
+                properties:
+                  apiVersion:
+                    description: API version of the referent.
+                    type: string
+                  fieldPath:
+                    description: 'If referring to a piece of an object instead of
+                      an entire object, this string should contain a valid JSON/Go
+                      field access statement, such as desiredState.manifest.containers[2].
+                      For example, if the object reference is to a container within
+                      a pod, this would take on a value like: "spec.containers{name}"
+                      (where "name" refers to the name of the container that triggered
+                      the event) or if no container name is specified "spec.containers[2]"
+                      (container with index 2 in this pod). This syntax is chosen
+                      only to have some well-defined way of referencing a part of
+                      an object. TODO: this design is not final and this field is
+                      subject to change in the future.'
+                    type: string
+                  kind:
+                    description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                    type: string
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                    type: string
+                  namespace:
+                    description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                    type: string
+                  resourceVersion:
+                    description: 'Specific resourceVersion to which this reference
+                      is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                    type: string
+                  uid:
+                    description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
+            type: object
+          status:
+            description: MetalMachineStatus defines the observed state of MetalMachine.
+            properties:
+              errorMessage:
+                description: "ErrorMessage will be set in the event that there is
+                  a terminal problem reconciling the Machine and will contain a more
+                  verbose string suitable for logging and human consumption. \n This
+                  field should not be set for transitive errors that a controller
+                  faces that are expected to be fixed automatically over time (like
+                  service outages), but instead indicate that something is fundamentally
+                  wrong with the Machine's spec or the configuration of the controller,
+                  and that manual intervention is required. Examples of terminal errors
+                  would be invalid combinations of settings in the spec, values that
+                  are unsupported by the controller, or the responsible controller
+                  itself being critically misconfigured. \n Any transient errors that
+                  occur during the reconciliation of Machines can be added as events
+                  to the Machine object and/or logged in the controller's output."
+                type: string
+              errorReason:
+                description: "ErrorReason will be set in the event that there is a
+                  terminal problem reconciling the Machine and will contain a succinct
+                  value suitable for machine interpretation. \n This field should
+                  not be set for transitive errors that a controller faces that are
+                  expected to be fixed automatically over time (like service outages),
+                  but instead indicate that something is fundamentally wrong with
+                  the Machine's spec or the configuration of the controller, and that
+                  manual intervention is required. Examples of terminal errors would
+                  be invalid combinations of settings in the spec, values that are
+                  unsupported by the controller, or the responsible controller itself
+                  being critically misconfigured. \n Any transient errors that occur
+                  during the reconciliation of Machines can be added as events to
+                  the Machine object and/or logged in the controller's output."
+                type: string
+              ready:
+                type: boolean
+            required:
+            - ready
+            type: object
+        type: object
+    served: true
+    storage: false
+    subresources:
+      status: {}
+  - additionalPrinterColumns:
+    - description: MetalMachine ready status
+      jsonPath: .status.ready
+      name: Ready
+      type: string
+    - description: Cluster to which this MetalMachine belongs
+      jsonPath: .metadata.labels.cluster\.x-k8s\.io/cluster-name
+      name: Cluster
+      priority: 1
+      type: string
+    - description: Machine object to which this MetalMachine belongs
+      jsonPath: .metadata.ownerReferences[?(@.kind=="Machine")].name
+      name: Machine
+      priority: 1
+      type: string
+    - description: Server ID
+      jsonPath: .spec.serverRef.name
+      name: Server
+      priority: 1
+      type: string
+    - description: The age of this resource
+      jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha3
+    schema:
+      openAPIV3Schema:
+        description: MetalMachine is the Schema for the metalmachines API.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: MetalMachineSpec defines the desired state of MetalMachine.
+            properties:
+              providerID:
+                description: ProviderID is the unique identifier as specified by the
+                  cloud provider.
+                type: string
+              serverClassRef:
+                description: "ObjectReference contains enough information to let you
+                  inspect or modify the referred object. --- New uses of this type
+                  are discouraged because of difficulty describing its usage when
+                  embedded in APIs. 1. Ignored fields.  It includes many fields which
+                  are not generally honored.  For instance, ResourceVersion and FieldPath
+                  are both very rarely valid in actual usage. 2. Invalid usage help.
+                  \ It is impossible to add specific help for individual usage.  In
+                  most embedded usages, there are particular restrictions like, \"must
+                  refer only to types A and B\" or \"UID not honored\" or \"name must
+                  be restricted\". Those cannot be well described when embedded. 3.
+                  Inconsistent validation.  Because the usages are different, the
+                  validation rules are different by usage, which makes it hard for
+                  users to predict what will happen. 4. The fields are both imprecise
+                  and overly precise.  Kind is not a precise mapping to a URL. This
+                  can produce ambiguity during interpretation and require a REST mapping.
+                  \ In most cases, the dependency is on the group,resource tuple and
+                  the version of the actual struct is irrelevant. 5. We cannot easily
+                  change it.  Because this type is embedded in many locations, updates
+                  to this type will affect numerous schemas.  Don't make new APIs
+                  embed an underspecified API type they do not control. \n Instead
+                  of using this type, create a locally provided and used type that
+                  is well-focused on your reference. For example, ServiceReferences
+                  for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533
+                  ."
+                properties:
+                  apiVersion:
+                    description: API version of the referent.
+                    type: string
+                  fieldPath:
+                    description: 'If referring to a piece of an object instead of
+                      an entire object, this string should contain a valid JSON/Go
+                      field access statement, such as desiredState.manifest.containers[2].
+                      For example, if the object reference is to a container within
+                      a pod, this would take on a value like: "spec.containers{name}"
+                      (where "name" refers to the name of the container that triggered
+                      the event) or if no container name is specified "spec.containers[2]"
+                      (container with index 2 in this pod). This syntax is chosen
+                      only to have some well-defined way of referencing a part of
+                      an object. TODO: this design is not final and this field is
+                      subject to change in the future.'
+                    type: string
+                  kind:
+                    description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                    type: string
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                    type: string
+                  namespace:
+                    description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                    type: string
+                  resourceVersion:
+                    description: 'Specific resourceVersion to which this reference
+                      is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                    type: string
+                  uid:
+                    description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
+              serverRef:
+                description: "ObjectReference contains enough information to let you
+                  inspect or modify the referred object. --- New uses of this type
+                  are discouraged because of difficulty describing its usage when
+                  embedded in APIs. 1. Ignored fields.  It includes many fields which
+                  are not generally honored.  For instance, ResourceVersion and FieldPath
+                  are both very rarely valid in actual usage. 2. Invalid usage help.
+                  \ It is impossible to add specific help for individual usage.  In
+                  most embedded usages, there are particular restrictions like, \"must
+                  refer only to types A and B\" or \"UID not honored\" or \"name must
+                  be restricted\". Those cannot be well described when embedded. 3.
+                  Inconsistent validation.  Because the usages are different, the
+                  validation rules are different by usage, which makes it hard for
+                  users to predict what will happen. 4. The fields are both imprecise
+                  and overly precise.  Kind is not a precise mapping to a URL. This
+                  can produce ambiguity during interpretation and require a REST mapping.
+                  \ In most cases, the dependency is on the group,resource tuple and
+                  the version of the actual struct is irrelevant. 5. We cannot easily
+                  change it.  Because this type is embedded in many locations, updates
+                  to this type will affect numerous schemas.  Don't make new APIs
+                  embed an underspecified API type they do not control. \n Instead
+                  of using this type, create a locally provided and used type that
+                  is well-focused on your reference. For example, ServiceReferences
+                  for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533
+                  ."
+                properties:
+                  apiVersion:
+                    description: API version of the referent.
+                    type: string
+                  fieldPath:
+                    description: 'If referring to a piece of an object instead of
+                      an entire object, this string should contain a valid JSON/Go
+                      field access statement, such as desiredState.manifest.containers[2].
+                      For example, if the object reference is to a container within
+                      a pod, this would take on a value like: "spec.containers{name}"
+                      (where "name" refers to the name of the container that triggered
+                      the event) or if no container name is specified "spec.containers[2]"
+                      (container with index 2 in this pod). This syntax is chosen
+                      only to have some well-defined way of referencing a part of
+                      an object. TODO: this design is not final and this field is
+                      subject to change in the future.'
+                    type: string
+                  kind:
+                    description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                    type: string
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                    type: string
+                  namespace:
+                    description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                    type: string
+                  resourceVersion:
+                    description: 'Specific resourceVersion to which this reference
+                      is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                    type: string
+                  uid:
+                    description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
+            type: object
+          status:
+            description: MetalMachineStatus defines the observed state of MetalMachine.
+            properties:
+              addresses:
+                description: Addresses contains the Metal machine associated addresses.
+                items:
+                  description: MachineAddress contains information for the node's
+                    address.
+                  properties:
+                    address:
+                      description: The machine address.
+                      type: string
+                    type:
+                      description: Machine address type, one of Hostname, ExternalIP
+                        or InternalIP.
+                      type: string
+                  required:
+                  - address
+                  - type
+                  type: object
+                type: array
+              conditions:
+                description: Conditions defines current state of the MetalMachine.
+                items:
+                  description: Condition defines an observation of a Cluster API resource
+                    operational state.
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another. This should be when the underlying condition changed.
+                        If that is not known, then using the time when the API field
+                        changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition. This field may be empty.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition
+                        in CamelCase. The specific API may choose whether or not this
+                        field is considered a guaranteed API. This field may not be
+                        empty.
+                      type: string
+                    severity:
+                      description: Severity provides an explicit classification of
+                        Reason code, so the users or machines can immediately understand
+                        the current situation and act accordingly. The Severity field
+                        MUST be set only when Status=False.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition in CamelCase or in foo.example.com/CamelCase.
+                        Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important.
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - status
+                  - type
+                  type: object
+                type: array
+              failureMessage:
+                description: "FailureMessage will be set in the event that there is
+                  a terminal problem reconciling the Machine and will contain a more
+                  verbose string suitable for logging and human consumption. \n This
+                  field should not be set for transitive errors that a controller
+                  faces that are expected to be fixed automatically over time (like
+                  service outages), but instead indicate that something is fundamentally
+                  wrong with the Machine's spec or the configuration of the controller,
+                  and that manual intervention is required. Examples of terminal errors
+                  would be invalid combinations of settings in the spec, values that
+                  are unsupported by the controller, or the responsible controller
+                  itself being critically misconfigured. \n Any transient errors that
+                  occur during the reconciliation of Machines can be added as events
+                  to the Machine object and/or logged in the controller's output."
+                type: string
+              failureReason:
+                description: "FailureReason will be set in the event that there is
+                  a terminal problem reconciling the Machine and will contain a succinct
+                  value suitable for machine interpretation. \n This field should
+                  not be set for transitive errors that a controller faces that are
+                  expected to be fixed automatically over time (like service outages),
+                  but instead indicate that something is fundamentally wrong with
+                  the Machine's spec or the configuration of the controller, and that
+                  manual intervention is required. Examples of terminal errors would
+                  be invalid combinations of settings in the spec, values that are
+                  unsupported by the controller, or the responsible controller itself
+                  being critically misconfigured. \n Any transient errors that occur
+                  during the reconciliation of Machines can be added as events to
+                  the Machine object and/or logged in the controller's output."
+                type: string
+              ready:
+                type: boolean
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions: null
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: sidero-system/caps-serving-cert
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: metalmachinetemplates.infrastructure.cluster.x-k8s.io
+spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        caBundle: Cg==
+        service:
+          name: caps-webhook-service
+          namespace: sidero-system
+          path: /convert
+      conversionReviewVersions:
+      - v1
+      - v1beta1
+  group: infrastructure.cluster.x-k8s.io
+  names:
+    categories:
+    - cluster-api
+    kind: MetalMachineTemplate
+    listKind: MetalMachineTemplateList
+    plural: metalmachinetemplates
+    singular: metalmachinetemplate
+  scope: Namespaced
+  versions:
+  - name: v1alpha2
+    schema:
+      openAPIV3Schema:
+        description: MetalMachineTemplate is the Schema for the metalmachinetemplates
+          API.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: MetalMachineTemplateSpec defines the desired state of MetalMachineTemplate.
+            properties:
+              template:
+                properties:
+                  spec:
+                    description: Spec is the specification of the desired behavior
+                      of the machine.
+                    properties:
+                      providerID:
+                        description: ProviderID is the unique identifier as specified
+                          by the cloud provider.
+                        type: string
+                      serverRef:
+                        description: "ObjectReference contains enough information
+                          to let you inspect or modify the referred object. --- New
+                          uses of this type are discouraged because of difficulty
+                          describing its usage when embedded in APIs. 1. Ignored fields.
+                          \ It includes many fields which are not generally honored.
+                          \ For instance, ResourceVersion and FieldPath are both very
+                          rarely valid in actual usage. 2. Invalid usage help.  It
+                          is impossible to add specific help for individual usage.
+                          \ In most embedded usages, there are particular restrictions
+                          like, \"must refer only to types A and B\" or \"UID not
+                          honored\" or \"name must be restricted\". Those cannot be
+                          well described when embedded. 3. Inconsistent validation.
+                          \ Because the usages are different, the validation rules
+                          are different by usage, which makes it hard for users to
+                          predict what will happen. 4. The fields are both imprecise
+                          and overly precise.  Kind is not a precise mapping to a
+                          URL. This can produce ambiguity during interpretation and
+                          require a REST mapping.  In most cases, the dependency is
+                          on the group,resource tuple and the version of the actual
+                          struct is irrelevant. 5. We cannot easily change it.  Because
+                          this type is embedded in many locations, updates to this
+                          type will affect numerous schemas.  Don't make new APIs
+                          embed an underspecified API type they do not control. \n
+                          Instead of using this type, create a locally provided and
+                          used type that is well-focused on your reference. For example,
+                          ServiceReferences for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533
+                          ."
+                        properties:
+                          apiVersion:
+                            description: API version of the referent.
+                            type: string
+                          fieldPath:
+                            description: 'If referring to a piece of an object instead
+                              of an entire object, this string should contain a valid
+                              JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                              For example, if the object reference is to a container
+                              within a pod, this would take on a value like: "spec.containers{name}"
+                              (where "name" refers to the name of the container that
+                              triggered the event) or if no container name is specified
+                              "spec.containers[2]" (container with index 2 in this
+                              pod). This syntax is chosen only to have some well-defined
+                              way of referencing a part of an object. TODO: this design
+                              is not final and this field is subject to change in
+                              the future.'
+                            type: string
+                          kind:
+                            description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                            type: string
+                          name:
+                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                            type: string
+                          namespace:
+                            description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                            type: string
+                          resourceVersion:
+                            description: 'Specific resourceVersion to which this reference
+                              is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                            type: string
+                          uid:
+                            description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                    type: object
+                required:
+                - spec
+                type: object
+            required:
+            - template
+            type: object
+          status:
+            description: MetalMachineTemplateStatus defines the observed state of
+              MetalMachineTemplate.
+            type: object
+        type: object
+    served: true
+    storage: false
+  - name: v1alpha3
+    schema:
+      openAPIV3Schema:
+        description: MetalMachineTemplate is the Schema for the metalmachinetemplates
+          API.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: MetalMachineTemplateSpec defines the desired state of MetalMachineTemplate.
+            properties:
+              template:
+                properties:
+                  spec:
+                    description: Spec is the specification of the desired behavior
+                      of the machine.
+                    properties:
+                      providerID:
+                        description: ProviderID is the unique identifier as specified
+                          by the cloud provider.
+                        type: string
+                      serverClassRef:
+                        description: "ObjectReference contains enough information
+                          to let you inspect or modify the referred object. --- New
+                          uses of this type are discouraged because of difficulty
+                          describing its usage when embedded in APIs. 1. Ignored fields.
+                          \ It includes many fields which are not generally honored.
+                          \ For instance, ResourceVersion and FieldPath are both very
+                          rarely valid in actual usage. 2. Invalid usage help.  It
+                          is impossible to add specific help for individual usage.
+                          \ In most embedded usages, there are particular restrictions
+                          like, \"must refer only to types A and B\" or \"UID not
+                          honored\" or \"name must be restricted\". Those cannot be
+                          well described when embedded. 3. Inconsistent validation.
+                          \ Because the usages are different, the validation rules
+                          are different by usage, which makes it hard for users to
+                          predict what will happen. 4. The fields are both imprecise
+                          and overly precise.  Kind is not a precise mapping to a
+                          URL. This can produce ambiguity during interpretation and
+                          require a REST mapping.  In most cases, the dependency is
+                          on the group,resource tuple and the version of the actual
+                          struct is irrelevant. 5. We cannot easily change it.  Because
+                          this type is embedded in many locations, updates to this
+                          type will affect numerous schemas.  Don't make new APIs
+                          embed an underspecified API type they do not control. \n
+                          Instead of using this type, create a locally provided and
+                          used type that is well-focused on your reference. For example,
+                          ServiceReferences for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533
+                          ."
+                        properties:
+                          apiVersion:
+                            description: API version of the referent.
+                            type: string
+                          fieldPath:
+                            description: 'If referring to a piece of an object instead
+                              of an entire object, this string should contain a valid
+                              JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                              For example, if the object reference is to a container
+                              within a pod, this would take on a value like: "spec.containers{name}"
+                              (where "name" refers to the name of the container that
+                              triggered the event) or if no container name is specified
+                              "spec.containers[2]" (container with index 2 in this
+                              pod). This syntax is chosen only to have some well-defined
+                              way of referencing a part of an object. TODO: this design
+                              is not final and this field is subject to change in
+                              the future.'
+                            type: string
+                          kind:
+                            description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                            type: string
+                          name:
+                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                            type: string
+                          namespace:
+                            description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                            type: string
+                          resourceVersion:
+                            description: 'Specific resourceVersion to which this reference
+                              is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                            type: string
+                          uid:
+                            description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                      serverRef:
+                        description: "ObjectReference contains enough information
+                          to let you inspect or modify the referred object. --- New
+                          uses of this type are discouraged because of difficulty
+                          describing its usage when embedded in APIs. 1. Ignored fields.
+                          \ It includes many fields which are not generally honored.
+                          \ For instance, ResourceVersion and FieldPath are both very
+                          rarely valid in actual usage. 2. Invalid usage help.  It
+                          is impossible to add specific help for individual usage.
+                          \ In most embedded usages, there are particular restrictions
+                          like, \"must refer only to types A and B\" or \"UID not
+                          honored\" or \"name must be restricted\". Those cannot be
+                          well described when embedded. 3. Inconsistent validation.
+                          \ Because the usages are different, the validation rules
+                          are different by usage, which makes it hard for users to
+                          predict what will happen. 4. The fields are both imprecise
+                          and overly precise.  Kind is not a precise mapping to a
+                          URL. This can produce ambiguity during interpretation and
+                          require a REST mapping.  In most cases, the dependency is
+                          on the group,resource tuple and the version of the actual
+                          struct is irrelevant. 5. We cannot easily change it.  Because
+                          this type is embedded in many locations, updates to this
+                          type will affect numerous schemas.  Don't make new APIs
+                          embed an underspecified API type they do not control. \n
+                          Instead of using this type, create a locally provided and
+                          used type that is well-focused on your reference. For example,
+                          ServiceReferences for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533
+                          ."
+                        properties:
+                          apiVersion:
+                            description: API version of the referent.
+                            type: string
+                          fieldPath:
+                            description: 'If referring to a piece of an object instead
+                              of an entire object, this string should contain a valid
+                              JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                              For example, if the object reference is to a container
+                              within a pod, this would take on a value like: "spec.containers{name}"
+                              (where "name" refers to the name of the container that
+                              triggered the event) or if no container name is specified
+                              "spec.containers[2]" (container with index 2 in this
+                              pod). This syntax is chosen only to have some well-defined
+                              way of referencing a part of an object. TODO: this design
+                              is not final and this field is subject to change in
+                              the future.'
+                            type: string
+                          kind:
+                            description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                            type: string
+                          name:
+                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                            type: string
+                          namespace:
+                            description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                            type: string
+                          resourceVersion:
+                            description: 'Specific resourceVersion to which this reference
+                              is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                            type: string
+                          uid:
+                            description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                    type: object
+                required:
+                - spec
+                type: object
+            required:
+            - template
+            type: object
+          status:
+            description: MetalMachineTemplateStatus defines the observed state of
+              MetalMachineTemplate.
+            type: object
+        type: object
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions: null
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: sidero-system/caps-serving-cert
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: serverbindings.infrastructure.cluster.x-k8s.io
+spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        caBundle: Cg==
+        service:
+          name: caps-webhook-service
+          namespace: sidero-system
+          path: /convert
+      conversionReviewVersions:
+      - v1
+      - v1beta1
+  group: infrastructure.cluster.x-k8s.io
+  names:
+    kind: ServerBinding
+    listKind: ServerBindingList
+    plural: serverbindings
+    singular: serverbinding
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - description: ServerBinding ready status
+      jsonPath: .status.ready
+      name: Ready
+      type: string
+    - description: Server ID
+      jsonPath: .metadata.name
+      name: Server
+      priority: 1
+      type: string
+    - description: Server Class
+      jsonPath: .spec.serverClassRef.name
+      name: ServerClass
+      priority: 1
+      type: string
+    - description: Metal Machine
+      jsonPath: .spec.metalMachineRef.name
+      name: MetalMachine
+      priority: 1
+      type: string
+    - description: Cluster to which this ServerBinding belongs
+      jsonPath: .metadata.labels.cluster\.x-k8s\.io/cluster-name
+      name: Cluster
+      priority: 1
+      type: string
+    - description: The age of this resource
+      jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha3
+    schema:
+      openAPIV3Schema:
+        description: "ServerBinding defines the binding between the MetalMachine and
+          the Server. \n ServerBinding always has matching ID with the Server object.
+          ServerBinding optionally binds to the ServerClass which Server was picked
+          from."
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ServerBindingSpec defines the spec of the ServerBinding object.
+            properties:
+              addresses:
+                description: Addresses describes node addresses for the server.
+                items:
+                  type: string
+                type: array
+              hostname:
+                description: Hostname describes node hostname for the server.
+                type: string
+              metalMachineRef:
+                description: "ObjectReference contains enough information to let you
+                  inspect or modify the referred object. --- New uses of this type
+                  are discouraged because of difficulty describing its usage when
+                  embedded in APIs. 1. Ignored fields.  It includes many fields which
+                  are not generally honored.  For instance, ResourceVersion and FieldPath
+                  are both very rarely valid in actual usage. 2. Invalid usage help.
+                  \ It is impossible to add specific help for individual usage.  In
+                  most embedded usages, there are particular restrictions like, \"must
+                  refer only to types A and B\" or \"UID not honored\" or \"name must
+                  be restricted\". Those cannot be well described when embedded. 3.
+                  Inconsistent validation.  Because the usages are different, the
+                  validation rules are different by usage, which makes it hard for
+                  users to predict what will happen. 4. The fields are both imprecise
+                  and overly precise.  Kind is not a precise mapping to a URL. This
+                  can produce ambiguity during interpretation and require a REST mapping.
+                  \ In most cases, the dependency is on the group,resource tuple and
+                  the version of the actual struct is irrelevant. 5. We cannot easily
+                  change it.  Because this type is embedded in many locations, updates
+                  to this type will affect numerous schemas.  Don't make new APIs
+                  embed an underspecified API type they do not control. \n Instead
+                  of using this type, create a locally provided and used type that
+                  is well-focused on your reference. For example, ServiceReferences
+                  for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533
+                  ."
+                properties:
+                  apiVersion:
+                    description: API version of the referent.
+                    type: string
+                  fieldPath:
+                    description: 'If referring to a piece of an object instead of
+                      an entire object, this string should contain a valid JSON/Go
+                      field access statement, such as desiredState.manifest.containers[2].
+                      For example, if the object reference is to a container within
+                      a pod, this would take on a value like: "spec.containers{name}"
+                      (where "name" refers to the name of the container that triggered
+                      the event) or if no container name is specified "spec.containers[2]"
+                      (container with index 2 in this pod). This syntax is chosen
+                      only to have some well-defined way of referencing a part of
+                      an object. TODO: this design is not final and this field is
+                      subject to change in the future.'
+                    type: string
+                  kind:
+                    description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                    type: string
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                    type: string
+                  namespace:
+                    description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                    type: string
+                  resourceVersion:
+                    description: 'Specific resourceVersion to which this reference
+                      is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                    type: string
+                  uid:
+                    description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
+              serverClassRef:
+                description: "ObjectReference contains enough information to let you
+                  inspect or modify the referred object. --- New uses of this type
+                  are discouraged because of difficulty describing its usage when
+                  embedded in APIs. 1. Ignored fields.  It includes many fields which
+                  are not generally honored.  For instance, ResourceVersion and FieldPath
+                  are both very rarely valid in actual usage. 2. Invalid usage help.
+                  \ It is impossible to add specific help for individual usage.  In
+                  most embedded usages, there are particular restrictions like, \"must
+                  refer only to types A and B\" or \"UID not honored\" or \"name must
+                  be restricted\". Those cannot be well described when embedded. 3.
+                  Inconsistent validation.  Because the usages are different, the
+                  validation rules are different by usage, which makes it hard for
+                  users to predict what will happen. 4. The fields are both imprecise
+                  and overly precise.  Kind is not a precise mapping to a URL. This
+                  can produce ambiguity during interpretation and require a REST mapping.
+                  \ In most cases, the dependency is on the group,resource tuple and
+                  the version of the actual struct is irrelevant. 5. We cannot easily
+                  change it.  Because this type is embedded in many locations, updates
+                  to this type will affect numerous schemas.  Don't make new APIs
+                  embed an underspecified API type they do not control. \n Instead
+                  of using this type, create a locally provided and used type that
+                  is well-focused on your reference. For example, ServiceReferences
+                  for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533
+                  ."
+                properties:
+                  apiVersion:
+                    description: API version of the referent.
+                    type: string
+                  fieldPath:
+                    description: 'If referring to a piece of an object instead of
+                      an entire object, this string should contain a valid JSON/Go
+                      field access statement, such as desiredState.manifest.containers[2].
+                      For example, if the object reference is to a container within
+                      a pod, this would take on a value like: "spec.containers{name}"
+                      (where "name" refers to the name of the container that triggered
+                      the event) or if no container name is specified "spec.containers[2]"
+                      (container with index 2 in this pod). This syntax is chosen
+                      only to have some well-defined way of referencing a part of
+                      an object. TODO: this design is not final and this field is
+                      subject to change in the future.'
+                    type: string
+                  kind:
+                    description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                    type: string
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                    type: string
+                  namespace:
+                    description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                    type: string
+                  resourceVersion:
+                    description: 'Specific resourceVersion to which this reference
+                      is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                    type: string
+                  uid:
+                    description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
+              siderolink:
+                description: SideroLink describes state of the SideroLink tunnel.
+                properties:
+                  address:
+                    description: NodeAddress is the tunnel address of the node.
+                    type: string
+                  publicKey:
+                    description: NodePublicKey is the Wireguard public key of the
+                      node.
+                    type: string
+                required:
+                - address
+                - publicKey
+                type: object
+            required:
+            - metalMachineRef
+            type: object
+          status:
+            description: ServerBindingState defines the observed state of ServerBinding.
+            properties:
+              conditions:
+                description: Conditions defines current state of the ServerBinding.
+                items:
+                  description: Condition defines an observation of a Cluster API resource
+                    operational state.
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another. This should be when the underlying condition changed.
+                        If that is not known, then using the time when the API field
+                        changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition. This field may be empty.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition
+                        in CamelCase. The specific API may choose whether or not this
+                        field is considered a guaranteed API. This field may not be
+                        empty.
+                      type: string
+                    severity:
+                      description: Severity provides an explicit classification of
+                        Reason code, so the users or machines can immediately understand
+                        the current situation and act accordingly. The Severity field
+                        MUST be set only when Status=False.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition in CamelCase or in foo.example.com/CamelCase.
+                        Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important.
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - status
+                  - type
+                  type: object
+                type: array
+              ready:
+                description: Ready is true when matching server is found.
+                type: boolean
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions: null
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+    clusterctl.cluster.x-k8s.io/move: ""
+  name: serverclasses.metal.sidero.dev
+spec:
+  group: metal.sidero.dev
+  names:
+    kind: ServerClass
+    listKind: ServerClassList
+    plural: serverclasses
+    singular: serverclass
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - description: the number of available servers
+      jsonPath: .status.serversAvailable
+      name: Available
+      type: string
+    - description: the number of servers in use
+      jsonPath: .status.serversInUse
+      name: In Use
+      type: string
+    - description: The age of this resource
+      jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: ServerClass is the Schema for the serverclasses API.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ServerClassSpec defines the desired state of ServerClass.
+            properties:
+              bootFromDiskMethod:
+                description: "BootFromDiskMethod specifies the method to exit iPXE
+                  to force boot from disk. \n If not set, controller default is used.
+                  Valid values: ipxe-exit, http-404, ipxe-sanboot."
+                type: string
+              configPatches:
+                description: Set of config patches to apply to the machine configuration
+                  to the servers provisioned via this server class.
+                items:
+                  properties:
+                    op:
+                      type: string
+                    path:
+                      type: string
+                    value:
+                      x-kubernetes-preserve-unknown-fields: true
+                  required:
+                  - op
+                  - path
+                  type: object
+                type: array
+              environmentRef:
+                description: Reference to the environment which should be used to
+                  provision the servers via this server class.
+                properties:
+                  apiVersion:
+                    description: API version of the referent.
+                    type: string
+                  fieldPath:
+                    description: 'If referring to a piece of an object instead of
+                      an entire object, this string should contain a valid JSON/Go
+                      field access statement, such as desiredState.manifest.containers[2].
+                      For example, if the object reference is to a container within
+                      a pod, this would take on a value like: "spec.containers{name}"
+                      (where "name" refers to the name of the container that triggered
+                      the event) or if no container name is specified "spec.containers[2]"
+                      (container with index 2 in this pod). This syntax is chosen
+                      only to have some well-defined way of referencing a part of
+                      an object. TODO: this design is not final and this field is
+                      subject to change in the future.'
+                    type: string
+                  kind:
+                    description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                    type: string
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                    type: string
+                  namespace:
+                    description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                    type: string
+                  resourceVersion:
+                    description: 'Specific resourceVersion to which this reference
+                      is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                    type: string
+                  uid:
+                    description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
+              qualifiers:
+                description: "Qualifiers to match on the server spec. \n If qualifiers
+                  are empty, they match all servers. Server should match both qualifiers
+                  and selector conditions to be included into the server class."
+                properties:
+                  cpu:
+                    items:
+                      properties:
+                        manufacturer:
+                          type: string
+                        version:
+                          type: string
+                      type: object
+                    type: array
+                  labelSelectors:
+                    items:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    type: array
+                  systemInformation:
+                    items:
+                      properties:
+                        family:
+                          type: string
+                        manufacturer:
+                          type: string
+                        productName:
+                          type: string
+                        serialNumber:
+                          type: string
+                        skuNumber:
+                          type: string
+                        version:
+                          type: string
+                      type: object
+                    type: array
+                type: object
+              selector:
+                description: Label selector to filter the matching servers based on
+                  labels. A label selector is a label query over a set of resources.
+                  The result of matchLabels and matchExpressions are ANDed. An empty
+                  label selector matches all objects. A null label selector matches
+                  no objects.
+                properties:
+                  matchExpressions:
+                    description: matchExpressions is a list of label selector requirements.
+                      The requirements are ANDed.
+                    items:
+                      description: A label selector requirement is a selector that
+                        contains values, a key, and an operator that relates the key
+                        and values.
+                      properties:
+                        key:
+                          description: key is the label key that the selector applies
+                            to.
+                          type: string
+                        operator:
+                          description: operator represents a key's relationship to
+                            a set of values. Valid operators are In, NotIn, Exists
+                            and DoesNotExist.
+                          type: string
+                        values:
+                          description: values is an array of string values. If the
+                            operator is In or NotIn, the values array must be non-empty.
+                            If the operator is Exists or DoesNotExist, the values
+                            array must be empty. This array is replaced during a strategic
+                            merge patch.
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - key
+                      - operator
+                      type: object
+                    type: array
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: matchLabels is a map of {key,value} pairs. A single
+                      {key,value} in the matchLabels map is equivalent to an element
+                      of matchExpressions, whose key field is "key", the operator
+                      is "In", and the values array contains only "value". The requirements
+                      are ANDed.
+                    type: object
+                type: object
+                x-kubernetes-map-type: atomic
+            type: object
+          status:
+            description: ServerClassStatus defines the observed state of ServerClass.
+            properties:
+              serversAvailable:
+                items:
+                  type: string
+                type: array
+              serversInUse:
+                items:
+                  type: string
+                type: array
+            required:
+            - serversAvailable
+            - serversInUse
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions: null
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+    clusterctl.cluster.x-k8s.io/move: ""
+  name: servers.metal.sidero.dev
+spec:
+  group: metal.sidero.dev
+  names:
+    kind: Server
+    listKind: ServerList
+    plural: servers
+    singular: server
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - description: server hostname
+      jsonPath: .spec.hostname
+      name: Hostname
+      type: string
+    - description: BMC IP
+      jsonPath: .spec.bmc.endpoint
+      name: BMC IP
+      priority: 1
+      type: string
+    - description: indicates if the server is accepted
+      jsonPath: .spec.accepted
+      name: Accepted
+      type: boolean
+    - description: indicates if the server is cordoned
+      jsonPath: .spec.cordoned
+      name: Cordoned
+      type: boolean
+    - description: indicates that the server has been allocated
+      jsonPath: .status.inUse
+      name: Allocated
+      type: boolean
+    - description: indicates if the server is clean or not
+      jsonPath: .status.isClean
+      name: Clean
+      type: boolean
+    - description: display the current power status
+      jsonPath: .status.power
+      name: Power
+      type: string
+    - description: The age of this resource
+      jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Server is the Schema for the servers API.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ServerSpec defines the desired state of Server.
+            properties:
+              accepted:
+                type: boolean
+              bmc:
+                description: BMC defines data about how to talk to the node via ipmitool.
+                properties:
+                  endpoint:
+                    description: BMC endpoint.
+                    type: string
+                  interface:
+                    description: BMC Interface Type. Defaults to lanplus.
+                    type: string
+                  pass:
+                    description: BMC password value.
+                    type: string
+                  passFrom:
+                    description: Source for the password value. Cannot be used if
+                      Pass is not empty.
+                    properties:
+                      secretKeyRef:
+                        description: SecretKeyRef defines a ref to a given key within
+                          a secret.
+                        properties:
+                          key:
+                            description: Key to select
+                            type: string
+                          name:
+                            type: string
+                          namespace:
+                            description: 'Namespace and name of credential secret
+                              nb: can''t use namespacedname here b/c it doesn''t have
+                              json tags in the struct :('
+                            type: string
+                        required:
+                        - key
+                        - name
+                        - namespace
+                        type: object
+                    type: object
+                  port:
+                    description: BMC port. Defaults to 623.
+                    format: int32
+                    type: integer
+                  user:
+                    description: BMC user value.
+                    type: string
+                  userFrom:
+                    description: Source for the user value. Cannot be used if User
+                      is not empty.
+                    properties:
+                      secretKeyRef:
+                        description: SecretKeyRef defines a ref to a given key within
+                          a secret.
+                        properties:
+                          key:
+                            description: Key to select
+                            type: string
+                          name:
+                            type: string
+                          namespace:
+                            description: 'Namespace and name of credential secret
+                              nb: can''t use namespacedname here b/c it doesn''t have
+                              json tags in the struct :('
+                            type: string
+                        required:
+                        - key
+                        - name
+                        - namespace
+                        type: object
+                    type: object
+                required:
+                - endpoint
+                type: object
+              bootFromDiskMethod:
+                description: "BootFromDiskMethod specifies the method to exit iPXE
+                  to force boot from disk. \n If not set, controller default is used.
+                  Valid values: ipxe-exit, http-404, ipxe-sanboot."
+                type: string
+              configPatches:
+                items:
+                  properties:
+                    op:
+                      type: string
+                    path:
+                      type: string
+                    value:
+                      x-kubernetes-preserve-unknown-fields: true
+                  required:
+                  - op
+                  - path
+                  type: object
+                type: array
+              cordoned:
+                type: boolean
+              cpu:
+                properties:
+                  manufacturer:
+                    type: string
+                  version:
+                    type: string
+                type: object
+              environmentRef:
+                description: "ObjectReference contains enough information to let you
+                  inspect or modify the referred object. --- New uses of this type
+                  are discouraged because of difficulty describing its usage when
+                  embedded in APIs. 1. Ignored fields.  It includes many fields which
+                  are not generally honored.  For instance, ResourceVersion and FieldPath
+                  are both very rarely valid in actual usage. 2. Invalid usage help.
+                  \ It is impossible to add specific help for individual usage.  In
+                  most embedded usages, there are particular restrictions like, \"must
+                  refer only to types A and B\" or \"UID not honored\" or \"name must
+                  be restricted\". Those cannot be well described when embedded. 3.
+                  Inconsistent validation.  Because the usages are different, the
+                  validation rules are different by usage, which makes it hard for
+                  users to predict what will happen. 4. The fields are both imprecise
+                  and overly precise.  Kind is not a precise mapping to a URL. This
+                  can produce ambiguity during interpretation and require a REST mapping.
+                  \ In most cases, the dependency is on the group,resource tuple and
+                  the version of the actual struct is irrelevant. 5. We cannot easily
+                  change it.  Because this type is embedded in many locations, updates
+                  to this type will affect numerous schemas.  Don't make new APIs
+                  embed an underspecified API type they do not control. \n Instead
+                  of using this type, create a locally provided and used type that
+                  is well-focused on your reference. For example, ServiceReferences
+                  for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533
+                  ."
+                properties:
+                  apiVersion:
+                    description: API version of the referent.
+                    type: string
+                  fieldPath:
+                    description: 'If referring to a piece of an object instead of
+                      an entire object, this string should contain a valid JSON/Go
+                      field access statement, such as desiredState.manifest.containers[2].
+                      For example, if the object reference is to a container within
+                      a pod, this would take on a value like: "spec.containers{name}"
+                      (where "name" refers to the name of the container that triggered
+                      the event) or if no container name is specified "spec.containers[2]"
+                      (container with index 2 in this pod). This syntax is chosen
+                      only to have some well-defined way of referencing a part of
+                      an object. TODO: this design is not final and this field is
+                      subject to change in the future.'
+                    type: string
+                  kind:
+                    description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                    type: string
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                    type: string
+                  namespace:
+                    description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                    type: string
+                  resourceVersion:
+                    description: 'Specific resourceVersion to which this reference
+                      is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                    type: string
+                  uid:
+                    description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
+              hostname:
+                type: string
+              managementApi:
+                description: ManagementAPI defines data about how to talk to the node
+                  via simple HTTP API.
+                properties:
+                  endpoint:
+                    type: string
+                required:
+                - endpoint
+                type: object
+              pxeBootAlways:
+                type: boolean
+              pxeMode:
+                description: "PXEMode specifies the method to trigger PXE boot via
+                  IPMI. \n If not set, controller default is used. Valid values: uefi,
+                  bios."
+                type: string
+              system:
+                properties:
+                  family:
+                    type: string
+                  manufacturer:
+                    type: string
+                  productName:
+                    type: string
+                  serialNumber:
+                    type: string
+                  skuNumber:
+                    type: string
+                  version:
+                    type: string
+                type: object
+            required:
+            - accepted
+            type: object
+          status:
+            description: ServerStatus defines the observed state of Server.
+            properties:
+              addresses:
+                description: Addresses lists discovered node IPs.
+                items:
+                  description: NodeAddress contains information for the node's address.
+                  properties:
+                    address:
+                      description: The node address.
+                      type: string
+                    type:
+                      description: Node address type, one of Hostname, ExternalIP
+                        or InternalIP.
+                      type: string
+                  required:
+                  - address
+                  - type
+                  type: object
+                type: array
+              conditions:
+                description: Conditions defines current service state of the Server.
+                items:
+                  description: Condition defines an observation of a Cluster API resource
+                    operational state.
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another. This should be when the underlying condition changed.
+                        If that is not known, then using the time when the API field
+                        changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition. This field may be empty.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition
+                        in CamelCase. The specific API may choose whether or not this
+                        field is considered a guaranteed API. This field may not be
+                        empty.
+                      type: string
+                    severity:
+                      description: Severity provides an explicit classification of
+                        Reason code, so the users or machines can immediately understand
+                        the current situation and act accordingly. The Severity field
+                        MUST be set only when Status=False.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition in CamelCase or in foo.example.com/CamelCase.
+                        Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important.
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - status
+                  - type
+                  type: object
+                type: array
+              inUse:
+                description: InUse is true when server is assigned to some MetalMachine.
+                type: boolean
+              isClean:
+                description: IsClean is true when server disks are wiped.
+                type: boolean
+              power:
+                description: 'Power is the current power state of the server: "on",
+                  "off" or "unknown".'
+                type: string
+              ready:
+                description: Ready is true when server is accepted and in use.
+                type: boolean
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions: null
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: caps-leader-election-role
+  namespace: sidero-system
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - configmaps/status
+  verbs:
+  - get
+  - update
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: sidero-leader-election-role
+  namespace: sidero-system
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - configmaps/status
+  verbs:
+  - get
+  - update
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: caps-manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - clusters
+  - clusters/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - machines
+  - machines/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - metalclusters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - metalclusters/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - metalmachines
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - metalmachines/status
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - serverbindings
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - serverbindings/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - metal.sidero.dev
+  resources:
+  - serverclasses
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - metal.sidero.dev
+  resources:
+  - serverclasses/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - metal.sidero.dev
+  resources:
+  - servers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - metal.sidero.dev
+  resources:
+  - servers/status
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: sidero-environment-editor-role
+rules:
+- apiGroups:
+  - metal.sidero.dev
+  resources:
+  - environments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - metal.sidero.dev
+  resources:
+  - environments/status
+  verbs:
+  - get
+  - patch
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: sidero-proxy-role
+rules:
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: sidero-server-editor-role
+rules:
+- apiGroups:
+  - metal.sidero.dev
+  resources:
+  - servers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - metal.sidero.dev
+  resources:
+  - servers/status
+  verbs:
+  - get
+  - patch
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: sidero-serverclass-editor-role
+rules:
+- apiGroups:
+  - metal.sidero.dev
+  resources:
+  - serverclasses
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - metal.sidero.dev
+  resources:
+  - serverclasses/status
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  creationTimestamp: null
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: caps-leader-election-rolebinding
+  namespace: sidero-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: caps-leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: sidero-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  creationTimestamp: null
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: sidero-leader-election-rolebinding
+  namespace: sidero-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: sidero-leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: sidero-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  creationTimestamp: null
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: caps-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: caps-manager-role
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: sidero-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  creationTimestamp: null
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: caps-metalcluster-editor-role-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: caps-manager-role
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: sidero-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  creationTimestamp: null
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: caps-metalmachine-editor-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: caps-manager-role
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: sidero-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  creationTimestamp: null
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: sidero-manager-environment-editor-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: sidero-environment-editor-role
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: sidero-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  creationTimestamp: null
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: sidero-manager-server-editor-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: sidero-server-editor-role
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: sidero-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  creationTimestamp: null
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: sidero-manager-serverclass-editor-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: sidero-serverclass-editor-role
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: sidero-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  creationTimestamp: null
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: sidero-proxy-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: sidero-proxy-role
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: sidero-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: caps-webhook-service
+  namespace: sidero-system
+spec:
+  ports:
+  - port: 443
+    targetPort: 9443
+  selector:
+    app: sidero
+    cluster.x-k8s.io/provider: sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    control-plane: caps-controller-manager
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+    control-plane: caps-controller-manager
+  name: sidero-controller-manager-metrics-service
+  namespace: sidero-system
+spec:
+  ports:
+  - name: https
+    port: 8443
+    targetPort: https
+  selector:
+    app: sidero
+    cluster.x-k8s.io/provider: sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    control-plane: caps-controller-manager
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: sidero-http
+  namespace: sidero-system
+spec:
+  ports:
+  - port: 8081
+    protocol: TCP
+    targetPort: http
+  selector:
+    app: sidero
+    cluster.x-k8s.io/provider: sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    control-plane: sidero-controller-manager
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: sidero-siderolink
+  namespace: sidero-system
+spec:
+  ports:
+  - port: 51821
+    protocol: UDP
+    targetPort: siderolink
+  selector:
+    app: sidero
+    cluster.x-k8s.io/provider: sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    control-plane: sidero-controller-manager
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: sidero-tftp
+  namespace: sidero-system
+spec:
+  ports:
+  - port: 69
+    protocol: UDP
+    targetPort: tftp
+  selector:
+    app: sidero
+    cluster.x-k8s.io/provider: sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    control-plane: sidero-controller-manager
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+    control-plane: caps-controller-manager
+  name: caps-controller-manager
+  namespace: sidero-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sidero
+      cluster.x-k8s.io/provider: sidero
+      cluster.x-k8s.io/v1alpha3: v1alpha3
+      cluster.x-k8s.io/v1alpha4: v1alpha3
+      cluster.x-k8s.io/v1beta1: v1alpha3
+      control-plane: caps-controller-manager
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: sidero
+        cluster.x-k8s.io/provider: sidero
+        cluster.x-k8s.io/v1alpha3: v1alpha3
+        cluster.x-k8s.io/v1alpha4: v1alpha3
+        cluster.x-k8s.io/v1beta1: v1alpha3
+        control-plane: caps-controller-manager
+    spec:
+      containers:
+      - args:
+        - --metrics-bind-addr=127.0.0.1:8080
+        command:
+        - /manager
+        image: ghcr.io/siderolabs/caps-controller-manager:v0.5.8
+        imagePullPolicy: Always
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: healthz
+        name: manager
+        ports:
+        - containerPort: 9443
+          name: webhook-server
+          protocol: TCP
+        - containerPort: 9440
+          name: healthz
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: healthz
+        resources:
+          limits:
+            cpu: "1"
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: caps-webhook-service-cert
+status: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+    control-plane: sidero-controller-manager
+  name: sidero-controller-manager
+  namespace: sidero-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sidero
+      cluster.x-k8s.io/provider: sidero
+      cluster.x-k8s.io/v1alpha3: v1alpha3
+      cluster.x-k8s.io/v1alpha4: v1alpha3
+      cluster.x-k8s.io/v1beta1: v1alpha3
+      control-plane: sidero-controller-manager
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: sidero
+        cluster.x-k8s.io/provider: sidero
+        cluster.x-k8s.io/v1alpha3: v1alpha3
+        cluster.x-k8s.io/v1alpha4: v1alpha3
+        cluster.x-k8s.io/v1beta1: v1alpha3
+        control-plane: sidero-controller-manager
+    spec:
+      containers:
+      - args:
+        - --metrics-bind-addr=127.0.0.1:8080
+        - --api-endpoint=${SIDERO_ENDPOINT}
+        - --api-port=8081
+        - --http-port=8081
+        - --extra-agent-kernel-args=-
+        - --boot-from-disk-method=ipxe-exit
+        - --auto-accept-servers=true
+        - --insecure-wipe=true
+        - --auto-bmc-setup=true
+        - --server-reboot-timeout=20m
+        - --ipmi-pxe-method=uefi
+        - --test-power-simulated-explicit-failure-prob=0
+        - --test-power-simulated-silent-failure-prob=0
+        command:
+        - /manager
+        env:
+        - name: API_ENDPOINT
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        image: ghcr.io/siderolabs/sidero-controller-manager:v0.5.8
+        imagePullPolicy: Always
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: healthz
+        name: manager
+        ports:
+        - containerPort: 69
+          name: tftp
+          protocol: UDP
+        - containerPort: 8081
+          name: http
+          protocol: TCP
+        - containerPort: 9440
+          name: healthz
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: healthz
+        resources:
+          limits:
+            cpu: "1"
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+      - args:
+        - --wireguard-endpoint=${SIDERO_ENDPOINT}
+        - --wireguard-port=51821
+        command:
+        - /siderolink-manager
+        env:
+        - name: API_ENDPOINT
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        image: ghcr.io/siderolabs/sidero-controller-manager:v0.5.8
+        imagePullPolicy: Always
+        name: siderolink
+        ports:
+        - containerPort: 51821
+          name: siderolink
+          protocol: UDP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 50m
+            memory: 128Mi
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+          privileged: false
+        volumeMounts:
+        - mountPath: /dev/net/tun
+          name: dev-tun
+      - command:
+        - /log-receiver
+        image: ghcr.io/siderolabs/sidero-controller-manager:v0.5.8
+        imagePullPolicy: Always
+        name: serverlogs
+        resources:
+          limits:
+            cpu: 256m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 128Mi
+      - command:
+        - /events-manager
+        image: ghcr.io/siderolabs/sidero-controller-manager:v0.5.8
+        imagePullPolicy: Always
+        name: serverevents
+        resources:
+          limits:
+            cpu: 256m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 128Mi
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - hostPath:
+          path: /dev/net/tun
+          type: CharDevice
+        name: dev-tun
+status: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: caps-serving-cert
+  namespace: sidero-system
+spec:
+  dnsNames:
+  - caps-webhook-service.sidero-system.svc
+  - caps-webhook-service.sidero-system.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: caps-selfsigned-issuer
+  secretName: caps-webhook-service-cert
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  labels:
+    app: sidero
+    cluster.x-k8s.io/provider: infrastructure-sidero
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: caps-selfsigned-issuer
+  namespace: sidero-system
+spec:
+  selfSigned: {}

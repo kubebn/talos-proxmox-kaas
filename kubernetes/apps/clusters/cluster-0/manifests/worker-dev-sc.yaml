@@ -1,0 +1,72 @@
+apiVersion: metal.sidero.dev/v1alpha1
+kind: ServerClass
+metadata:
+  name: worker-cluster-0
+spec:
+  qualifiers:
+    cpu:
+     -  manufacturer: QEMU
+        version: pc-i440fx-7.2
+    labelSelectors:
+      - "worker-dev": "true"
+  configPatches:
+    - op: add
+      path: /machine/network/interfaces
+      value:
+         - interface: eth0
+           dhcp: true
+         - interface: dummy0
+           addresses:
+             - 169.254.2.53/32
+    - op: add
+      path: /machine/network/extraHostEntries
+      value:
+        - ip: "${CLUSTER_0_VIP}"
+          aliases:
+            - api.cluster.local
+    - op: add
+      path: /machine/network/nameservers
+      value:
+        - 1.1.1.1
+        - 1.0.0.1
+    - op: replace
+      path: /machine/install
+      value:
+        disk: /dev/sda
+        extraKernelArgs: ['elevator=noop']
+    - op: replace
+      path: /cluster/proxy
+      value:
+        disabled: true
+    - op: replace
+      path: /machine/kubelet/extraArgs
+      value:
+        rotate-server-certificates: true
+    - op: replace
+      path: /machine/kubelet/clusterDNS
+      value:
+        - 169.254.2.53
+        - 10.96.0.10
+    - op: replace
+      path: /machine/registries/mirrors
+      value:
+        docker.io:
+          endpoints:
+            - http://${CACHE_REGISTRY}/v2/proxy-docker.io
+          overridePath: true
+        ghcr.io:
+          endpoints:
+            - http://${CACHE_REGISTRY}/v2/proxy-ghcr.io
+          overridePath: true
+        gcr.io:
+          endpoints:
+            - http://${CACHE_REGISTRY}/v2/proxy-gcr.io
+          overridePath: true
+        registry.k8s.io:
+          endpoints:
+            - http://${CACHE_REGISTRY}/v2/proxy-registry.k8s.io
+          overridePath: true
+        quay.io:
+          endpoints:
+            - http://${CACHE_REGISTRY}/v2/proxy-quay.io
+          overridePath: true

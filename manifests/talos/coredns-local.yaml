@@ -1,0 +1,153 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-local
+  namespace: kube-system
+data:
+  empty.db: |
+    @       60      IN      SOA     localnet. root.localnet. (
+                    1       ; serial
+                    60      ; refresh
+                    60      ; retry
+                    60      ; expiry
+                    60 )    ; minimum
+    ;
+    @       IN      NS      localnet.
+
+  hosts: |
+    # static hosts
+    169.254.2.53        dns.local
+
+  Corefile.local: |
+    (empty) {
+        file /etc/coredns/empty.db
+    }
+
+    .:53 {
+        errors
+        bind 169.254.2.53
+
+        health 127.0.0.1:8091 {
+           lameduck 5s
+        }
+
+        hosts /etc/coredns/hosts {
+            reload 60s
+            fallthrough
+        }
+
+        kubernetes cluster.local in-addr.arpa ip6.arpa {
+            endpoint https://api.cluster.local:6443
+            kubeconfig /etc/coredns/kubeconfig.conf coredns
+            pods insecure
+            ttl 60
+        }
+        prometheus :9153
+
+        forward . /etc/resolv.conf {
+            policy sequential
+            expire 30s
+        }
+
+        cache 300
+        loop
+        reload
+        loadbalance
+    }
+  kubeconfig.conf: |-
+    apiVersion: v1
+    kind: Config
+    clusters:
+    - cluster:
+        certificate-authority: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        server: https://api.cluster.local:6443
+      name: default
+    contexts:
+    - context:
+        cluster: default
+        namespace: kube-system
+        user: coredns
+      name: coredns
+    current-context: coredns
+    users:
+    - name: coredns
+      user:
+        tokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: coredns-local
+  namespace: kube-system
+  labels:
+    k8s-app: kube-dns-local
+    kubernetes.io/name: CoreDNS
+spec:
+  updateStrategy:
+    type: RollingUpdate
+  minReadySeconds: 15
+  selector:
+    matchLabels:
+      k8s-app: kube-dns-local
+      kubernetes.io/name: CoreDNS
+  template:
+    metadata:
+      labels:
+        k8s-app: kube-dns-local
+        kubernetes.io/name: CoreDNS
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9153"
+    spec:
+      priorityClassName: system-node-critical
+      serviceAccount: coredns
+      serviceAccountName: coredns
+      enableServiceLinks: false
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+        operator: Exists
+      - effect: NoSchedule
+        key: node.cloudprovider.kubernetes.io/uninitialized
+        operator: Exists
+      hostNetwork: true
+      containers:
+      - name: coredns
+        image: coredns/coredns:1.10.1
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+        args: [ "-conf", "/etc/coredns/Corefile.local" ]
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/coredns
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            host: 127.0.0.1
+            path: /health
+            port: 8091
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - NET_BIND_SERVICE
+            drop:
+            - all
+          readOnlyRootFilesystem: true
+      dnsPolicy: Default
+      volumes:
+        - name: config-volume
+          configMap:
+            name: coredns-local

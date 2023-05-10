@@ -1,0 +1,142 @@
+---
+# Source: talos-dhcp-server/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dhcp-talos-dhcp-server
+  namespace: kube-system
+  labels:
+    helm.sh/chart: talos-dhcp-server-0.0.9
+    app.kubernetes.io/name: talos-dhcp-server
+    app.kubernetes.io/instance: dhcp
+    app.kubernetes.io/version: "0.0.9"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: talos-dhcp-server/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dhcp-talos-dhcp-server
+  namespace: kube-system
+type: Opaque
+stringData: 
+  dhcpd.conf: |-
+    default-lease-time 600;
+    max-lease-time 7200;
+    ddns-update-style none;
+    authoritative;
+    log-facility local7;
+    update-conflict-detection true;
+    subnet 10.244.0.0 netmask 255.255.0.0 {
+    }
+    subnet 10.1.1.0 netmask 255.255.255.0 {
+      range 10.1.1.50 10.1.1.180;
+      option subnet-mask 255.255.255.0;
+      option broadcast-address 10.1.1.250;
+      option routers 10.1.1.1;
+      option domain-name-servers 1.1.1.1, 1.0.0.1;
+      option domain-name "weecodelab.nl";
+      default-lease-time 600;
+      max-lease-time 7200;
+    }
+    allow bootp;
+    allow booting;
+  
+  
+    # IP address for PXE-based TFTP methods
+    next-server ${SIDERO_ENDPOINT};
+  
+    # Configuration for iPXE clients
+    class "ipxeclient" {
+      match if exists user-class and (option user-class = "iPXE");
+      filename "http://${SIDERO_ENDPOINT}:8081/tftp/undionly.kpxe";
+    }
+  
+    # Configuration for legacy BIOS-based PXE boot
+    class "biosclients" {
+      match if not exists user-class and substring (option vendor-class-identifier, 15, 5) = "00000";
+      filename "undionly.kpxe";
+    }
+  
+    # Configuration for UEFI-based PXE boot
+    class "pxeclients" {
+      match if not exists user-class and substring (option vendor-class-identifier, 0, 9) = "PXEClient";
+      filename "ipxe.efi";
+    }
+  
+    # Configuration for UEFI-based HTTP boot
+    class "httpclients" {
+      match if not exists user-class and substring (option vendor-class-identifier, 0, 10) = "HTTPClient";
+      option vendor-class-identifier "HTTPClient";
+      filename "http://${SIDERO_ENDPOINT}:8081/tftp/ipxe.efi";
+    }
+---
+# Source: talos-dhcp-server/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dhcp-talos-dhcp-server
+  namespace: kube-system
+  labels:
+    helm.sh/chart: talos-dhcp-server-0.0.9
+    app.kubernetes.io/name: talos-dhcp-server
+    app.kubernetes.io/instance: dhcp
+    app.kubernetes.io/version: "0.0.9"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: talos-dhcp-server
+      app.kubernetes.io/instance: dhcp
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: talos-dhcp-server
+        app.kubernetes.io/instance: dhcp
+    spec:
+      serviceAccountName: dhcp-talos-dhcp-server
+      hostNetwork: true
+      containers:
+        - name: talos-dhcp-server
+          #command: ["sleep", "infinity"]
+          securityContext:
+            allowPrivilegeEscalation: true
+            capabilities:
+              add:
+              - NET_ADMIN
+              - NET_RAW
+            runAsGroup: 0
+            runAsNonRoot: false
+            runAsUser: 0
+          image: "crashntech/talos-dhcp-server:0.0.9"
+          imagePullPolicy: IfNotPresent
+          volumeMounts: 
+            - mountPath: /var/lib/dhcp/
+              name: dhcpd-leases
+            - mountPath: /etc/dhcp/dhcpd.conf
+              name: config
+              subPath: dhcpd.conf
+          ports:
+            - name: dhcp
+              containerPort: 67
+              protocol: UDP
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+      tolerations:
+        - effect: NoSchedule
+          operator: Exists
+      volumes:
+        - name: dhcpd-leases
+          emptyDir:
+            sizeLimit: 100Mi
+        - name: config
+          secret:
+            secretName: dhcp-talos-dhcp-server

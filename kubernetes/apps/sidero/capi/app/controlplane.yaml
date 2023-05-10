@@ -1,0 +1,790 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    cluster.x-k8s.io/provider: control-plane-talos
+    clusterctl.cluster.x-k8s.io: ""
+  name: cacppt-system
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: cacppt-system/cacppt-serving-cert
+    controller-gen.kubebuilder.io/version: v0.11.3
+  creationTimestamp: null
+  labels:
+    cluster.x-k8s.io/provider: control-plane-talos
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+    cluster.x-k8s.io/v1alpha4: v1alpha3
+    cluster.x-k8s.io/v1beta1: v1alpha3
+    clusterctl.cluster.x-k8s.io: ""
+  name: taloscontrolplanes.controlplane.cluster.x-k8s.io
+spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        caBundle: Cg==
+        service:
+          name: webhook-service
+          namespace: cacppt-system
+          path: /convert
+      conversionReviewVersions:
+      - v1
+      - v1beta1
+  group: controlplane.cluster.x-k8s.io
+  names:
+    categories:
+    - cluster-api
+    kind: TalosControlPlane
+    listKind: TalosControlPlaneList
+    plural: taloscontrolplanes
+    shortNames:
+    - tcp
+    singular: taloscontrolplane
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - description: TalosControlPlane API Server is ready to receive requests
+      jsonPath: .status.ready
+      name: Ready
+      type: boolean
+    - description: This denotes whether or not the control plane has the uploaded
+        talos-config configmap
+      jsonPath: .status.initialized
+      name: Initialized
+      type: boolean
+    - description: Total number of non-terminated machines targeted by this control
+        plane
+      jsonPath: .status.replicas
+      name: Replicas
+      type: integer
+    - description: Total number of fully running and ready control plane machines
+      jsonPath: .status.readyReplicas
+      name: Ready Replicas
+      type: integer
+    - description: Total number of unavailable machines targeted by this control plane
+      jsonPath: .status.unavailableReplicas
+      name: Unavailable Replicas
+      type: integer
+    name: v1alpha3
+    schema:
+      openAPIV3Schema:
+        description: TalosControlPlane is the Schema for the taloscontrolplanes API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: TalosControlPlaneSpec defines the desired state of TalosControlPlane
+            properties:
+              controlPlaneConfig:
+                description: ControlPlaneConfig is a two TalosConfigSpecs to use for
+                  initializing and joining machines to the control plane.
+                properties:
+                  controlplane:
+                    description: TalosConfigSpec defines the desired state of TalosConfig
+                    properties:
+                      configPatches:
+                        items:
+                          properties:
+                            op:
+                              type: string
+                            path:
+                              type: string
+                            value:
+                              x-kubernetes-preserve-unknown-fields: true
+                          required:
+                          - op
+                          - path
+                          type: object
+                        type: array
+                      data:
+                        type: string
+                      generateType:
+                        type: string
+                      hostname:
+                        description: Set hostname in the machine configuration to
+                          some value.
+                        properties:
+                          source:
+                            description: "Source of the hostname. \n Allowed values:
+                              \"MachineName\" (use linked Machine's Name)."
+                            type: string
+                        type: object
+                      talosVersion:
+                        type: string
+                    required:
+                    - generateType
+                    type: object
+                  init:
+                    description: 'Deprecated: starting from cacppt v0.4.0 provider
+                      doesn''t use init configs.'
+                    properties:
+                      configPatches:
+                        items:
+                          properties:
+                            op:
+                              type: string
+                            path:
+                              type: string
+                            value:
+                              x-kubernetes-preserve-unknown-fields: true
+                          required:
+                          - op
+                          - path
+                          type: object
+                        type: array
+                      data:
+                        type: string
+                      generateType:
+                        type: string
+                      hostname:
+                        description: Set hostname in the machine configuration to
+                          some value.
+                        properties:
+                          source:
+                            description: "Source of the hostname. \n Allowed values:
+                              \"MachineName\" (use linked Machine's Name)."
+                            type: string
+                        type: object
+                      talosVersion:
+                        type: string
+                    required:
+                    - generateType
+                    type: object
+                required:
+                - controlplane
+                type: object
+              infrastructureTemplate:
+                description: InfrastructureTemplate is a required reference to a custom
+                  resource offered by an infrastructure provider.
+                properties:
+                  apiVersion:
+                    description: API version of the referent.
+                    type: string
+                  fieldPath:
+                    description: 'If referring to a piece of an object instead of
+                      an entire object, this string should contain a valid JSON/Go
+                      field access statement, such as desiredState.manifest.containers[2].
+                      For example, if the object reference is to a container within
+                      a pod, this would take on a value like: "spec.containers{name}"
+                      (where "name" refers to the name of the container that triggered
+                      the event) or if no container name is specified "spec.containers[2]"
+                      (container with index 2 in this pod). This syntax is chosen
+                      only to have some well-defined way of referencing a part of
+                      an object. TODO: this design is not final and this field is
+                      subject to change in the future.'
+                    type: string
+                  kind:
+                    description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                    type: string
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                    type: string
+                  namespace:
+                    description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                    type: string
+                  resourceVersion:
+                    description: 'Specific resourceVersion to which this reference
+                      is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                    type: string
+                  uid:
+                    description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
+              replicas:
+                description: Number of desired machines. Defaults to 1. When stacked
+                  etcd is used only odd numbers are permitted, as per [etcd best practice](https://etcd.io/docs/v3.3.12/faq/#why-an-odd-number-of-cluster-members).
+                  This is a pointer to distinguish between explicit zero and not specified.
+                format: int32
+                type: integer
+              rolloutStrategy:
+                default:
+                  rollingUpdate:
+                    maxSurge: 1
+                  type: RollingUpdate
+                description: The RolloutStrategy to use to replace control plane machines
+                  with new ones.
+                properties:
+                  rollingUpdate:
+                    description: Rolling update config params. Present only if RolloutStrategyType
+                      = RollingUpdate.
+                    properties:
+                      maxSurge:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        description: 'The maximum number of control planes that can
+                          be scheduled above or under the desired number of control
+                          planes. Value can be an absolute number 1 or 0. Defaults
+                          to 1. Example: when this is set to 1, the control plane
+                          can be scaled up immediately when the rolling update starts.'
+                        x-kubernetes-int-or-string: true
+                    type: object
+                  type:
+                    description: "Change rollout strategy. \n Supported strategies:
+                      * \"RollingUpdate\". * \"OnDelete\" \n Default is RollingUpdate."
+                    type: string
+                type: object
+              version:
+                description: Version defines the desired Kubernetes version.
+                minLength: 2
+                pattern: ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$
+                type: string
+            required:
+            - controlPlaneConfig
+            - infrastructureTemplate
+            - version
+            type: object
+          status:
+            description: TalosControlPlaneStatus defines the observed state of TalosControlPlane
+            properties:
+              bootstrapped:
+                description: Bootstrapped denotes whether any nodes received bootstrap
+                  request which is required to start etcd and Kubernetes components
+                  in Talos.
+                type: boolean
+              conditions:
+                description: Conditions defines current service state of the KubeadmControlPlane.
+                items:
+                  description: Condition defines an observation of a Cluster API resource
+                    operational state.
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another. This should be when the underlying condition changed.
+                        If that is not known, then using the time when the API field
+                        changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition. This field may be empty.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition
+                        in CamelCase. The specific API may choose whether or not this
+                        field is considered a guaranteed API. This field may not be
+                        empty.
+                      type: string
+                    severity:
+                      description: Severity provides an explicit classification of
+                        Reason code, so the users or machines can immediately understand
+                        the current situation and act accordingly. The Severity field
+                        MUST be set only when Status=False.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition in CamelCase or in foo.example.com/CamelCase.
+                        Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important.
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - status
+                  - type
+                  type: object
+                type: array
+              failureMessage:
+                description: ErrorMessage indicates that there is a terminal problem
+                  reconciling the state, and will be set to a descriptive error message.
+                type: string
+              failureReason:
+                description: FailureReason indicates that there is a terminal problem
+                  reconciling the state, and will be set to a token value suitable
+                  for programmatic interpretation.
+                type: string
+              initialized:
+                description: Initialized denotes whether or not the control plane
+                  has the uploaded talos-config configmap.
+                type: boolean
+              observedGeneration:
+                description: ObservedGeneration is the latest generation observed
+                  by the controller.
+                format: int64
+                type: integer
+              ready:
+                description: Ready denotes that the TalosControlPlane API Server is
+                  ready to receive requests.
+                type: boolean
+              readyReplicas:
+                description: Total number of fully running and ready control plane
+                  machines.
+                format: int32
+                type: integer
+              replicas:
+                description: Total number of non-terminated machines targeted by this
+                  control plane (their labels match the selector).
+                format: int32
+                type: integer
+              selector:
+                description: 'Selector is the label selector in string format to avoid
+                  introspection by clients, and is used to provide the CRD-based integration
+                  for the scale subresource and additional integrations for things
+                  like kubectl describe.. The string will be in the same format as
+                  the query-param syntax. More info about label selectors: http://kubernetes.io/docs/user-guide/labels#label-selectors'
+                type: string
+              unavailableReplicas:
+                description: Total number of unavailable machines targeted by this
+                  control plane. This is the total number of machines that are still
+                  required for the deployment to have 100% available capacity. They
+                  may either be machines that are running but not yet ready or machines
+                  that still have not been created.
+                format: int32
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      scale:
+        labelSelectorPath: .status.selector
+        specReplicasPath: .spec.replicas
+        statusReplicasPath: .status.replicas
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions: null
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    cluster.x-k8s.io/provider: control-plane-talos
+    clusterctl.cluster.x-k8s.io: ""
+  name: cacppt-leader-election-role
+  namespace: cacppt-system
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - configmaps/status
+  verbs:
+  - get
+  - update
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  creationTimestamp: null
+  labels:
+    cluster.x-k8s.io/provider: control-plane-talos
+    clusterctl.cluster.x-k8s.io: ""
+  name: cacppt-manager-role
+  namespace: cacppt-system
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+- apiGroups:
+  - rbac
+  resources:
+  - rolebindings
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+- apiGroups:
+  - rbac
+  resources:
+  - roles
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  labels:
+    cluster.x-k8s.io/provider: control-plane-talos
+    clusterctl.cluster.x-k8s.io: ""
+  name: cacppt-manager-role
+rules:
+- apiGroups:
+  - bootstrap.cluster.x-k8s.io
+  - controlplane.cluster.x-k8s.io
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - '*'
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - clusters
+  - clusters/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - machines
+  - machines/status
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    cluster.x-k8s.io/provider: control-plane-talos
+    clusterctl.cluster.x-k8s.io: ""
+  name: cacppt-metrics-reader
+rules:
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    cluster.x-k8s.io/provider: control-plane-talos
+    clusterctl.cluster.x-k8s.io: ""
+  name: cacppt-proxy-role
+rules:
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  creationTimestamp: null
+  labels:
+    cluster.x-k8s.io/provider: control-plane-talos
+    clusterctl.cluster.x-k8s.io: ""
+  name: cacppt-leader-election-rolebinding
+  namespace: cacppt-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cacppt-leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: cacppt-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  creationTimestamp: null
+  labels:
+    cluster.x-k8s.io/provider: control-plane-talos
+    clusterctl.cluster.x-k8s.io: ""
+  name: cacppt-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cacppt-manager-role
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: cacppt-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  creationTimestamp: null
+  labels:
+    cluster.x-k8s.io/provider: control-plane-talos
+    clusterctl.cluster.x-k8s.io: ""
+  name: cacppt-proxy-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cacppt-proxy-role
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: cacppt-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    cluster.x-k8s.io/provider: control-plane-talos
+    clusterctl.cluster.x-k8s.io: ""
+    control-plane: controller-manager
+  name: cacppt-controller-manager-metrics-service
+  namespace: cacppt-system
+spec:
+  ports:
+  - name: https
+    port: 8443
+    targetPort: https
+  selector:
+    cluster.x-k8s.io/provider: control-plane-talos
+    control-plane: controller-manager
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    cluster.x-k8s.io/provider: control-plane-talos
+    clusterctl.cluster.x-k8s.io: ""
+  name: cacppt-webhook-service
+  namespace: cacppt-system
+spec:
+  ports:
+  - port: 443
+    targetPort: 9443
+  selector:
+    cluster.x-k8s.io/provider: control-plane-talos
+    control-plane: controller-manager
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    cluster.x-k8s.io/provider: control-plane-talos
+    clusterctl.cluster.x-k8s.io: ""
+    control-plane: controller-manager
+  name: cacppt-controller-manager
+  namespace: cacppt-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/provider: control-plane-talos
+      control-plane: controller-manager
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        cluster.x-k8s.io/provider: control-plane-talos
+        control-plane: controller-manager
+    spec:
+      containers:
+      - args:
+        - --metrics-bind-addr=127.0.0.1:8080
+        - --enable-leader-election
+        command:
+        - /manager
+        image: ghcr.io/siderolabs/cluster-api-control-plane-talos-controller:v0.5.0
+        imagePullPolicy: Always
+        name: manager
+        ports:
+        - containerPort: 9443
+          name: webhook-server
+          protocol: TCP
+        resources:
+          limits:
+            cpu: "1"
+            memory: 500Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: cacppt-webhook-service-cert
+status: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  labels:
+    cluster.x-k8s.io/provider: control-plane-talos
+    clusterctl.cluster.x-k8s.io: ""
+  name: cacppt-serving-cert
+  namespace: cacppt-system
+spec:
+  dnsNames:
+  - cacppt-webhook-service.cacppt-system.svc
+  - cacppt-webhook-service.cacppt-system.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: cacppt-selfsigned-issuer
+  secretName: cacppt-webhook-service-cert
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  labels:
+    cluster.x-k8s.io/provider: control-plane-talos
+    clusterctl.cluster.x-k8s.io: ""
+  name: cacppt-selfsigned-issuer
+  namespace: cacppt-system
+spec:
+  selfSigned: {}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: cacppt-system/cacppt-serving-cert
+  creationTimestamp: null
+  labels:
+    cluster.x-k8s.io/provider: control-plane-talos
+    clusterctl.cluster.x-k8s.io: ""
+  name: cacppt-mutating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: cacppt-webhook-service
+      namespace: cacppt-system
+      path: /mutate-controlplane-cluster-x-k8s-io-v1alpha3-taloscontrolplane
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: default.taloscontrolplane.controlplane.cluster.x-k8s.io
+  rules:
+  - apiGroups:
+    - controlplane.cluster.x-k8s.io
+    apiVersions:
+    - v1alpha3
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - taloscontrolplanes
+  sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: cacppt-system/cacppt-serving-cert
+  creationTimestamp: null
+  labels:
+    cluster.x-k8s.io/provider: control-plane-talos
+    clusterctl.cluster.x-k8s.io: ""
+  name: cacppt-validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: cacppt-webhook-service
+      namespace: cacppt-system
+      path: /validate-controlplane-cluster-x-k8s-io-v1alpha3-taloscontrolplane
+  failurePolicy: Fail
+  name: validate.taloscontrolplane.controlplane.cluster.x-k8s.io
+  rules:
+  - apiGroups:
+    - controlplane.cluster.x-k8s.io
+    apiVersions:
+    - v1alpha3
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - taloscontrolplanes
+  sideEffects: None

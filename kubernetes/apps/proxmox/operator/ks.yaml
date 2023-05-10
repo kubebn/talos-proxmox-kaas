@@ -1,0 +1,21 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.devbu.io/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: px-operator
+  namespace: flux-system
+spec:
+  path: ./kubernetes/apps/proxmox/operator/app
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: px-kaas
+  interval: 5m
+  retryInterval: 1m
+  timeout: 3m
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-settings
+        optional: false

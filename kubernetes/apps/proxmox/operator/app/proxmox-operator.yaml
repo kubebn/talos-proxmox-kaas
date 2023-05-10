@@ -1,0 +1,217 @@
+---
+# Source: proxmox-operator/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: proxmox-operator
+  namespace: kube-system
+  labels:
+    helm.sh/chart: proxmox-operator-0.1.1
+    app.kubernetes.io/name: proxmox-operator
+    app.kubernetes.io/instance: proxmox-operator
+    app.kubernetes.io/version: "0.1.1"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: proxmox-operator/templates/crds.yaml
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1
+metadata:
+  name: qemu.proxmox.xfix.org
+  labels:
+    app: proxmox-operator
+spec:
+  group: proxmox.xfix.org
+  names:
+    plural: qemu
+    singular: qemu
+    kind: Qemu
+    listKind: QemuList
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: Server is the Schema for the servers API.
+          type: object
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: ServerSpec defines the desired state of Server.
+              type: object
+              required:
+                - autostart
+                - autostop
+                - cpu
+                - memory
+              properties:
+                autostart:
+                  type: boolean
+                autostop:
+                  type: boolean
+                cluster:
+                  type: string
+                node:
+                  type: string
+                pool:
+                  type: string
+                anti-affinity:
+                  type: string
+                vmid:
+                  type: integer
+                clone:
+                  type: string
+                cpu:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    sockets:
+                      type: integer
+                    cores:
+                      type: integer
+                memory:
+                  type: object
+                  properties:
+                    size:
+                      type: integer
+                    balloon:
+                      type: integer
+                network:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                disk:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                tags:
+                  type: array
+                  items:
+                    type: string
+                options:
+                  x-kubernetes-preserve-unknown-fields: true
+                  type: object
+                  description: Qemu devices
+            status:
+              type: object
+              properties:
+                status:
+                  type: string
+                power:
+                  type: string
+                cluster:
+                  type: string
+                node:
+                  type: string
+                vmid:
+                  type: integer
+                net:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      mac:
+                        type: string
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Status
+          type: string
+          jsonPath: .status.status
+        - name: Power
+          type: string
+          jsonPath: .status.power
+        - name: Cluster
+          type: string
+          jsonPath: .status.cluster
+        - name: Node
+          type: string
+          jsonPath: .status.node
+        - name: VMID
+          type: integer
+          jsonPath: .status.vmid
+  conversion:
+    strategy: None
+---
+# Source: proxmox-operator/templates/serviceaccount.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: proxmox-operator
+rules:
+  - verbs:
+      - '*'
+    apiGroups:
+      - proxmox.xfix.org
+    resources:
+      - '*'
+---
+# Source: proxmox-operator/templates/serviceaccount.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: proxmox-operator
+subjects:
+  - kind: ServiceAccount
+    name: proxmox-operator
+    namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: proxmox-operator
+---
+# Source: proxmox-operator/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: proxmox-operator
+  namespace: kube-system
+  labels:
+    helm.sh/chart: proxmox-operator-0.1.1
+    app.kubernetes.io/name: proxmox-operator
+    app.kubernetes.io/instance: proxmox-operator
+    app.kubernetes.io/version: "0.1.1"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: proxmox-operator
+      app.kubernetes.io/instance: proxmox-operator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: proxmox-operator
+        app.kubernetes.io/instance: proxmox-operator
+    spec:
+      serviceAccountName: proxmox-operator
+      securityContext:
+        {}
+      containers:
+        - name: proxmox-operator
+          securityContext:
+            {}
+          image: "crashntech/proxmox-operator:0.1.2"
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          volumeMounts:
+          - name: config
+            mountPath: /app/config.yaml
+            subPath: config.yaml
+      volumes:
+      - name: config
+        secret:
+          secretName: proxmox-operator-creds

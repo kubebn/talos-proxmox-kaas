@@ -690,6 +690,10 @@ https://www.talos.dev/v1.4/talos-guides/install/cloud-platforms/nocloud/
 
 https://github.com/sergelogvinov/terraform-talos
 
+### Author's blog
+
+https://bnovickovs.me/
+
 ### terraform gitignore template
 
 ```bash

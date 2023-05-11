@@ -96,6 +96,7 @@ Table of contents
   * [Teraform destroy](#teraform-destroy)
 - [References](#references)
     + [terraform gitignore template](#terraform-gitignore-template)
+    + [Author's blog](#authors-blog)
 
 <!--te-->
 

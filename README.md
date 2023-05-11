@@ -244,7 +244,7 @@ Installation
 ============
 ### DHCP Disabled
 
-**To facilitate the testing of this lab, we need to disable the DHCP service in the infrastructure network, in my configuration it's 10.1.1.0/24. This is necessary because a DHCP server will be running inside the Management k8s cluster using FluxCD.**
+**To facilitate the testing of this lab, we need to disable the DHCP service in the infrastructure network; in my configuration vm network is 10.1.1.0/24. This is necessary because a DHCP server will be running inside the Management k8s cluster using FluxCD.**
 
 DHCP configuration needs to be changed according to your networking setup - [dhcp-config](kubernetes/apps/dhcp/dhcp.yaml)
 <br/><br/>
@@ -327,7 +327,7 @@ And then stop & convert that VM into the template in Proxmox.
 
 Configure variables in [terraform.tfvars](terraform/terraform.tfvars) 
 
-**!!! Keep apiDomain variable the same = api.cluster.local. Otherwise, Cilium is not going to work.**
+**!!! Keep apiDomain variable the same = api.cluster.local. Otherwise, Cilium init is going to fail.**
 
 ### terraform plan
 
@@ -647,7 +647,7 @@ metallb-system   speaker-m7d7z                           1/1     Running   0    
 ```
 
 ### Scaling
-In case if you want to add more nodes, you can add QEMU objects in [vms.yaml](kubernetes/apps/clusters/cluster-0/manifests/vms.yaml) manifest. Even though we have all resources in the management cluster, we can't scale the nodes using [kubectl command like here](https://www.sidero.dev/v0.5/getting-started/scale-workload/) thats because we use FluxCD to sync our manifests in the cluster. Therefore, we need to scale replicas in [cluster-0.yaml](kubernetes/apps/clusters/cluster-0/manifests/cluster-0.yaml) manifest, `MachineDeployment` object in order to add more worker nodes. Additionally, all of these new nodes need to be labeled with `worker-dev=true` `labelSelectors`.
+In case if you want to add more nodes, you can add QEMU objects in [vms.yaml](kubernetes/apps/clusters/cluster-0/manifests/vms.yaml) manifest. Even though we have all resources in the management cluster, we can't scale the nodes using [kubectl command like here](https://www.sidero.dev/v0.5/getting-started/scale-workload/) thats because we use FluxCD to sync our manifests in the cluster. Therefore, to add more worker nodes we need to scale replicas in [cluster-0.yaml](kubernetes/apps/clusters/cluster-0/manifests/cluster-0.yaml) manifest `MachineDeployment` object. Additionally, all of these new nodes need to be labeled with `worker-dev=true` `labelSelectors`.
 
 Likewise, if you add more nodes via Proxmox-operator, you can either set your custom uuid's for the nodes or delete the whole `smbios1` part.
 
@@ -655,17 +655,17 @@ Likewise, if you add more nodes via Proxmox-operator, you can either set your cu
 
 ### New clusters
 
-If you need to create a new cluster, please follow this [doc](https://www.sidero.dev/v0.5/getting-started/create-workload/). Nevertheless, it will be the same process of running these and adding it to your git repo, connected to FluxCD.
+If you need to create a new cluster, follow this [doc](https://www.sidero.dev/v0.5/getting-started/create-workload/). It will be the same process of running these commands, and once cluster-1 manifest is generated you can add it to FluxCD git repo.
 
 ```bash
-export CONTROL_PLANE_SERVERCLASS=master-cluster-0
-export WORKER_SERVERCLASS=worker-cluster-0
+export CONTROL_PLANE_SERVERCLASS=master-cluster-1
+export WORKER_SERVERCLASS=worker-cluster-1
 export TALOS_VERSION=v1.3.0
 export KUBERNETES_VERSION=v1.27.1
 export CONTROL_PLANE_PORT=6443
 export CONTROL_PLANE_ENDPOINT=api.cluster.local
 
-clusterctl generate cluster cluster-0 -i sidero:v0.5.8 > cluster-0.yaml
+clusterctl generate cluster cluster-1 -i sidero:v0.5.8 > cluster-1.yaml
 ```
 
 <br/><br/>

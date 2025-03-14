@@ -693,7 +693,7 @@ https://github.com/sergelogvinov/terraform-talos
 
 ### Author's blog
 
-https://bnovickovs.me/
+https://dev.to/bnovickovs
 
 ### terraform gitignore template
 

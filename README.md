@@ -695,6 +695,10 @@ https://github.com/sergelogvinov/terraform-talos
 
 https://dev.to/bnovickovs
 
+#### Hybrid cluster example
+
+https://github.com/kubebn/aws-talos-terraform-hybrid -- https://dev.to/bnovickovs/hybrid-k8s-cluster-talos-kubespan-kilo-wireguard-1f45
+
 ### terraform gitignore template
 
 ```bash
